@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#faf8f5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Familia" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>Familia 🏠</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #faf8f5;
+      --surface: #ffffff;
+      --border: #e8e2d9;
+      --text: #1a1a1a;
+      --text2: #6b6b6b;
+      --text3: #9b9b9b;
+      --radius: 14px;
+      --shadow: 0 1px 8px rgba(0,0,0,0.06);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overscroll-behavior: none; }
+
+    /* HEADER */
+    .header { position: sticky; top: 0; z-index: 50; background: var(--surface); border-bottom: 0.5px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+    .header-left h1 { font-size: 17px; font-weight: 600; }
+    .header-left p { font-size: 11px; color: var(--text2); margin-top: 1px; }
+    .user-switch { display: flex; gap: 6px; align-items: center; }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; user-select: none; }
+    .avatar.papa { background: #dce8fb; color: #2d5a9e; }
+    .avatar.mama { background: #fce4ec; color: #ad3060; }
+    .avatar.active { border-color: currentColor; box-shadow: 0 0 0 3px rgba(0,0,0,0.08); }
+    .avatar.inactive { opacity: 0.35; }
+
+    /* INSTALL BANNER */
+    #install-banner { display: none; margin: 12px 16px 0; background: linear-gradient(135deg, #e8f4fd, #fce4ec); border-radius: var(--radius); padding: 12px 14px; border: 0.5px solid #ddd; align-items: center; gap: 10px; }
+    #install-banner.show { display: flex; }
+    #install-banner span { flex: 1; font-size: 13px; color: var(--text); }
+    #install-banner button { background: #4a4a4a; color: white; border: none; padding: 7px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    #install-banner .close-banner { background: transparent; color: var(--text2); padding: 4px; font-size: 16px; }
+
+    /* NOTIFICATION BANNER */
+    #notif-banner { display: none; margin: 8px 16px 0; background: #fff8e8; border-radius: var(--radius); padding: 10px 14px; border: 0.5px solid #f0d080; align-items: center; gap: 10px; }
+    #notif-banner.show { display: flex; }
+    #notif-banner span { flex: 1; font-size: 12px; color: #7a5c00; }
+    #notif-banner button { background: #f0a500; color: white; border: none; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; }
+    #notif-banner .close-banner { background: transparent; color: var(--text2); padding: 4px; font-size: 15px; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 6px; padding: 12px 16px 0; overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { padding: 7px 16px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--surface); font-size: 13px; cursor: pointer; white-space: nowrap; color: var(--text2); transition: all 0.15s; }
+    .tab.active { background: #3a3a3a; color: white; border-color: #3a3a3a; }
+
+    /* BOARD */
+    .board-wrap { padding: 12px 16px 100px; display: flex; flex-direction: column; gap: 16px; }
+    .column { background: var(--surface); border-radius: var(--radius); border: 0.5px solid var(--border); overflow: hidden; }
+    .col-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
+    .col-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .col-count { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
+    .count-pendiente { background: #fff3cd; color: #856404; }
+    .count-en_curso { background: #d1ecf1; color: #0c5460; }
+    .count-hecho { background: #d4edda; color: #155724; }
+
+    .cards-list { padding: 8px 10px; }
+    .card { border-radius: 12px; padding: 10px 12px; margin-bottom: 7px; border: 0.5px solid transparent; cursor: pointer; transition: all 0.12s; position: relative; }
+    .card:last-child { margin-bottom: 0; }
+    .card:hover { box-shadow: var(--shadow); }
+    .card:active { transform: scale(0.985); }
+    .card.escuela { background: #f0f8ff; border-color: #cce5f0; }
+    .card.medico { background: #fff5f8; border-color: #f0ccd8; }
+    .card.actividad { background: #f1faf2; border-color: #c8e6ca; }
+    .card.otro { background: #faf5ff; border-color: #e0d0f5; }
+    .card.overdue { border-left: 3px solid #f87171 !important; padding-left: 10px; }
+    .card-title { font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+    .card-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 4px; }
+    .tag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 8px; }
+    .tag-escuela { background: #d0eaf8; color: #1a5c8a; }
+    .tag-medico { background: #fad4e0; color: #8a1a40; }
+    .tag-actividad { background: #c8e6ca; color: #1a5c2a; }
+    .tag-otro { background: #e0d0f5; color: #4a1a8a; }
+    .who-tag { font-size: 10px; padding: 2px 7px; border-radius: 8px; }
+    .who-papa { background: #dce8fb; color: #2d5a9e; }
+    .who-mama { background: #fce4ec; color: #ad3060; }
+    .who-ambos { background: #eeeeee; color: #555; }
+    .card-date { font-size: 11px; color: var(--text2); }
+    .date-overdue { color: #dc3545; font-weight: 600; }
+    .card-note { font-size: 11px; color: var(--text2); margin-top: 4px; line-height: 1.4; }
+    .kid-badge { font-size: 13px; }
+    .card-del { position: absolute; top: 8px; right: 10px; background: none; border: none; font-size: 14px; color: #ccc; cursor: pointer; opacity: 0; transition: opacity 0.1s; padding: 2px; }
+    .card:hover .card-del { opacity: 1; }
+    .card-del:hover { color: #e57373; }
+
+    .add-btn { width: 100%; padding: 10px; background: transparent; border: none; border-top: 0.5px solid var(--border); font-size: 13px; color: var(--text2); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.1s; }
+    .add-btn:hover { background: #f5f3f0; }
+
+    /* FAB */
+    .fab { position: fixed; bottom: 20px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: #3a3a3a; color: white; border: none; font-size: 24px; cursor: pointer; box-shadow: 0 4px 16px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center; z-index: 40; transition: transform 0.15s; }
+    .fab:active { transform: scale(0.92); }
+
+    /* MODAL */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: flex-end; justify-content: center; }
+    .overlay.open { display: flex; }
+    .sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; padding: 20px 18px 30px; animation: slideUp 0.2s ease; max-height: 90vh; overflow-y: auto; }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .sheet-handle { width: 36px; height: 4px; background: #ddd; border-radius: 2px; margin: 0 auto 16px; }
+    .sheet h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-label { font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    input, select, textarea { width: 100%; padding: 10px 12px; border: 0.5px solid #ddd; border-radius: 10px; font-size: 14px; font-family: inherit; background: #faf8f5; color: var(--text); outline: none; appearance: none; -webkit-appearance: none; }
+    input:focus, select:focus, textarea:focus { border-color: #999; background: white; }
+    textarea { resize: none; height: 70px; line-height: 1.5; }
+    .form-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-primary { flex: 1; padding: 12px; background: #3a3a3a; color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-secondary { padding: 12px 18px; background: transparent; border: 0.5px solid #ddd; border-radius: 12px; font-size: 14px; color: var(--text2); cursor: pointer; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); background: #222; color: white; padding: 10px 18px; border-radius: 20px; font-size: 13px; opacity: 0; transition: all 0.25s; z-index: 200; pointer-events: none; white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* NOTIF COUNTER */
+    .notif-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #f87171; border-radius: 50%; border: 1.5px solid white; }
+    .bell-wrap { position: relative; display: inline-block; }
+    .bell-btn { background: none; border: 0.5px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 15px; }
+
+    @media (min-width: 600px) {
+      .board-wrap { flex-direction: row; align-items: flex-start; }
+      .column { flex: 1; min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Familia 🏠</h1>
+    <p id="who-label">Conectado como Papá</p>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="bell-wrap">
+      <button class="bell-btn" onclick="checkNotifications()" title="Recordatorios">🔔</button>
+      <div class="notif-dot" id="notif-dot" style="display:none;"></div>
+    </div>
+    <div class="user-switch">
+      <div class="avatar papa active" id="btn-papa" onclick="switchUser('papa')">PA</div>
+      <div class="avatar mama inactive" id="btn-mama" onclick="switchUser('mama')">MA</div>
+    </div>
+  </div>
+</div>
+
+<div id="install-banner">
+  <span>📲 Instalá la app en tu pantalla de inicio</span>
+  <button onclick="installApp()">Instalar</button>
+  <button class="close-banner" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+</div>
+
+<div id="notif-banner">
+  <span>🔔 Activá notificaciones para recibir recordatorios de tareas y turnos</span>
+  <button onclick="requestNotifPermission()">Activar</button>
+  <button class="close-banner" onclick="document.getElementById('notif-banner').classList.remove('show')">✕</button>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-kid="todos" onclick="switchKid('todos', this)">👨‍👩‍👧‍👦 Todos</div>
+  <div class="tab" data-kid="emma" onclick="switchKid('emma', this)">🌸 Emma</div>
+  <div class="tab" data-kid="juani" onclick="switchKid('juani', this)">⚽ Juani</div>
+  <div class="tab" data-kid="juli" onclick="switchKid('juli', this)">🎨 Juli</div>
+</div>
+
+<div class="board-wrap" id="board"></div>
+
+<button class="fab" onclick="openModal(null, 'pendiente')">＋</button>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="modal-title">Nueva tarea</h2>
+    <div class="form-group">
+      <label class="form-label">Título</label>
+      <input type="text" id="f-titulo" placeholder="¿Qué hay que hacer?" />
+    </div>
+    <div class="form-row form-group">
+      <div>
+        <label class="form-label">Hijo/a</label>
+        <select id="f-hijo">
+          <option value="emma">🌸 Emma</option>
+          <option value="juani">⚽ Juani</option>
+          <option value="juli">🎨 Juli</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Categoría</label>
+        <select id="f-tipo">
+          <option value="escuela">📚 Escuela</option>
+          <option value="medico">🏥 Médico</option>
+          <option value="actividad">🎯 Actividad</option>
+          <option value="otro">💡 Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row form-group">
+      <div>
+        <label class="form-label">Fecha</label>
+        <input type="date" id="f-fecha" />
+      </div>
+      <div>
+        <label class="form-label">Estado</label>
+        <select id="f-estado">
+          <option value="pendiente">⏳ Pendiente</option>
+          <option value="en_curso">🔄 En curso</option>
+          <option value="hecho">✅ Hecho</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nota</label>
+      <textarea id="f-nota" placeholder="Detalle, dirección, link..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn-primary" onclick="saveCard()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE_KEY = 'familia_pwa_tasks_v1';
+let currentUser = 'papa';
+let currentKid = 'todos';
+let editingId = null;
+let deferredPrompt = null;
+let notifPermission = Notification.permission;
+
+const TODAY = new Date().toISOString().split('T')[0];
+
+let tasks = [
+  { id:1, titulo:'Presentación de ciencias', hijo:'emma', tipo:'escuela', fecha:'2026-04-18', estado:'pendiente', nota:'Sobre el sistema solar', quien:'mama' },
+  { id:2, titulo:'Control de rutina', hijo:'emma', tipo:'medico', fecha:'2026-04-22', estado:'pendiente', nota:'Pediatra Dr. López', quien:'papa' },
+  { id:3, titulo:'Partido de fútbol', hijo:'juani', tipo:'actividad', fecha:'2026-04-19', estado:'en_curso', nota:'Cancha norte, 10am', quien:'papa' },
+  { id:4, titulo:'Tarea de mate - fracciones', hijo:'juani', tipo:'escuela', fecha:'2026-04-17', estado:'pendiente', nota:'', quien:'mama' },
+  { id:5, titulo:'Clase de pintura', hijo:'juli', tipo:'actividad', fecha:'2026-04-20', estado:'pendiente', nota:'Llevar delantal', quien:'ambos' },
+  { id:6, titulo:'Turno oftalmólogo', hijo:'juli', tipo:'medico', fecha:'2026-04-16', estado:'hecho', nota:'Revisión de vista', quien:'mama' },
+];
+let nextId = 10;
+
+function loadTasks() {
+  try {
+    const s = localStorage.getItem(STORE_KEY);
+    if (s) { const d = JSON.parse(s); tasks = d.tasks; nextId = d.nextId || 10; }
+  } catch(e) {}
+}
+function saveTasks() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ tasks, nextId })); } catch(e) {}
+}
+
+// INSTALL
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
+});
+window.addEventListener('appinstalled', () => {
+  document.getElementById('install-banner').classList.remove('show');
+  showToast('✅ App instalada correctamente');
+});
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(r => {
+      if (r.outcome === 'accepted') showToast('🎉 Instalando...');
+      deferredPrompt = null;
+    });
+  } else {
+    showToast('📱 En Safari: Compartir → Agregar a inicio');
+  }
+}
+
+// NOTIFICATIONS
+function checkNotifBanner() {
+  if (Notification.permission === 'default') {
+    document.getElementById('notif-banner').classList.add('show');
+  }
+}
+
+async function requestNotifPermission() {
+  const perm = await Notification.requestPermission();
+  notifPermission = perm;
+  document.getElementById('notif-banner').classList.remove('show');
+  if (perm === 'granted') {
+    showToast('🔔 Notificaciones activadas');
+    scheduleNotifications();
+    new Notification('Familia App ✅', { body: '¡Notificaciones activadas! Te avisaremos de las tareas próximas.', icon: 'icons/icon-192.png' });
+  } else {
+    showToast('Notificaciones no habilitadas');
+  }
+}
+
+function checkNotifications() {
+  const urgentes = getUrgentTasks();
+  if (urgentes.length === 0) { showToast('✅ Sin tareas urgentes hoy'); return; }
+  if (Notification.permission === 'granted') {
+    urgentes.forEach(t => {
+      const d = t.fecha === TODAY ? 'hoy' : 'mañana';
+      new Notification(`${getKidEmoji(t.hijo)} ${t.titulo}`, { body: `${d.charAt(0).toUpperCase()+d.slice(1)} — ${getTipoLabel(t.tipo)}${t.nota ? '\n'+t.nota : ''}`, icon: 'icons/icon-192.png', tag: 'task-'+t.id });
+    });
+  } else {
+    showToast(`⚠️ ${urgentes.length} tarea(s) urgente(s)`);
+    requestNotifPermission();
+  }
+}
+
+function getUrgentTasks() {
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  const tStr = tomorrow.toISOString().split('T')[0];
+  return tasks.filter(t => t.estado !== 'hecho' && (t.fecha === TODAY || t.fecha === tStr || t.fecha < TODAY));
+}
+
+function scheduleNotifications() {
+  if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+    const urgent = getUrgentTasks();
+    if (urgent.length > 0 && 'Notification' in window) {
+      setTimeout(() => {
+        urgent.slice(0,3).forEach(t => {
+          const isToday = t.fecha === TODAY;
+          const isPast = t.fecha < TODAY;
+          const label = isPast ? 'vencida' : 'hoy';
+          new Notification(`📋 ${t.titulo}`, {
+            body: `${getKidEmoji(t.hijo)} ${t.hijo} — Tarea ${label}`,
+            icon: 'icons/icon-192.png', tag: 'reminder-'+t.id, requireInteraction: isPast
+          });
+        });
+      }, 2000);
+    }
+  }
+}
+
+function updateNotifDot() {
+  const u = getUrgentTasks();
+  document.getElementById('notif-dot').style.display = u.length > 0 ? 'block' : 'none';
+}
+
+// USER
+function switchUser(u) {
+  currentUser = u;
+  document.getElementById('btn-papa').className = 'avatar papa ' + (u==='papa'?'active':'inactive');
+  document.getElementById('btn-mama').className = 'avatar mama ' + (u==='mama'?'active':'inactive');
+  document.getElementById('who-label').textContent = 'Conectado como ' + (u==='papa'?'Papá':'Mamá');
+  showToast(u==='papa' ? '👨 Hola Papá' : '👩 Hola Mamá');
+}
+
+function switchKid(k, el) {
+  currentKid = k;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+// DATA
+const kidEmojis = { emma:'🌸', juani:'⚽', juli:'🎨' };
+const tipoLabels = { escuela:'📚 Escuela', medico:'🏥 Médico', actividad:'🎯 Actividad', otro:'💡 Otro' };
+function getKidEmoji(h) { return kidEmojis[h]||''; }
+function getTipoLabel(t) { return tipoLabels[t]||t; }
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  const ms = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(day)} ${ms[parseInt(m)-1]}`;
+}
+function isOverdue(t) { return t.fecha && t.fecha < TODAY && t.estado !== 'hecho'; }
+
+// RENDER
+const COLS = [
+  { key:'pendiente', label:'Pendiente', emoji:'⏳', cc:'count-pendiente' },
+  { key:'en_curso', label:'En curso', emoji:'🔄', cc:'count-en_curso' },
+  { key:'hecho', label:'Hecho', emoji:'✅', cc:'count-hecho' },
+];
+
+function filteredTasks() {
+  return tasks.filter(t => currentKid === 'todos' || t.hijo === currentKid);
+}
+
+function render() {
+  const ft = filteredTasks();
+  const board = document.getElementById('board');
+  board.innerHTML = COLS.map(col => {
+    const cards = ft.filter(t => t.estado === col.key);
+    return `<div class="column">
+      <div class="col-header">
+        <span class="col-title">${col.emoji} ${col.label}</span>
+        <span class="col-count ${col.cc}">${cards.length}</span>
+      </div>
+      <div class="cards-list">
+        ${cards.map(t => cardHTML(t)).join('')}
+      </div>
+      <button class="add-btn" onclick="openModal(null,'${col.key}')">＋ Agregar</button>
+    </div>`;
+  }).join('');
+  updateNotifDot();
+}
+
+function cardHTML(t) {
+  const od = isOverdue(t);
+  const dateClass = od ? 'date-overdue' : 'card-date';
+  const dateLabel = od ? `⚠️ ${formatDate(t.fecha)} (vencida)` : formatDate(t.fecha);
+  const who = t.quien==='papa'?'👨 Papá':t.quien==='mama'?'👩 Mamá':'👨‍👩 Ambos';
+  const whoClass = `who-tag who-${t.quien}`;
+  const kidBit = currentKid==='todos' ? `<span class="kid-badge">${getKidEmoji(t.hijo)}</span>` : '';
+  return `<div class="card ${t.tipo} ${od?'overdue':''}" onclick="openModal(${t.id})">
+    <button class="card-del" onclick="deleteCard(event,${t.id})">✕</button>
+    <div class="card-title">${t.titulo}</div>
+    <div class="card-row">
+      ${kidBit}
+      <span class="tag tag-${t.tipo}">${getTipoLabel(t.tipo)}</span>
+      <span class="${whoClass}">${who}</span>
+    </div>
+    ${t.fecha ? `<div class="${dateClass}">${dateLabel}</div>` : ''}
+    ${t.nota ? `<div class="card-note">${t.nota}</div>` : ''}
+  </div>`;
+}
+
+// MODAL
+function openModal(id, defaultEstado) {
+  editingId = id;
+  if (id) {
+    const t = tasks.find(x => x.id===id);
+    if (!t) return;
+    document.getElementById('modal-title').textContent = 'Editar tarea';
+    document.getElementById('f-titulo').value = t.titulo;
+    document.getElementById('f-hijo').value = t.hijo;
+    document.getElementById('f-tipo').value = t.tipo;
+    document.getElementById('f-fecha').value = t.fecha||'';
+    document.getElementById('f-estado').value = t.estado;
+    document.getElementById('f-nota').value = t.nota||'';
+  } else {
+    document.getElementById('modal-title').textContent = 'Nueva tarea';
+    document.getElementById('f-titulo').value = '';
+    document.getElementById('f-hijo').value = currentKid!=='todos' ? currentKid : 'emma';
+    document.getElementById('f-tipo').value = 'escuela';
+    document.getElementById('f-fecha').value = '';
+    document.getElementById('f-estado').value = defaultEstado||'pendiente';
+    document.getElementById('f-nota').value = '';
+  }
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-titulo').focus(), 200);
+}
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function overlayClick(e) { if (e.target === document.getElementById('overlay')) closeModal(); }
+
+function saveCard() {
+  const titulo = document.getElementById('f-titulo').value.trim();
+  if (!titulo) { showToast('⚠️ Escribí un título'); return; }
+  const data = {
+    titulo,
+    hijo: document.getElementById('f-hijo').value,
+    tipo: document.getElementById('f-tipo').value,
+    fecha: document.getElementById('f-fecha').value,
+    estado: document.getElementById('f-estado').value,
+    nota: document.getElementById('f-nota').value.trim(),
+    quien: currentUser,
+  };
+  if (editingId) {
+    const i = tasks.findIndex(t => t.id===editingId);
+    tasks[i] = { ...tasks[i], ...data };
+    showToast('✏️ Tarea actualizada');
+  } else {
+    tasks.push({ id: nextId++, ...data });
+    showToast('✅ Tarea guardada');
+    if (Notification.permission === 'granted' && data.fecha) {
+      const d = data.fecha === TODAY ? 'hoy' : formatDate(data.fecha);
+      new Notification(`Nueva tarea — ${getKidEmoji(data.hijo)} ${data.hijo}`, { body: `${titulo} — ${d}`, icon: 'icons/icon-192.png' });
+    }
+  }
+  saveTasks();
+  closeModal();
+  render();
+}
+
+function deleteCard(e, id) {
+  e.stopPropagation();
+  tasks = tasks.filter(t => t.id!==id);
+  saveTasks();
+  render();
+  showToast('🗑️ Tarea eliminada');
+}
+
+// TOAST
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// SERVICE WORKER
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    console.log('SW registrado');
+  }).catch(e => console.log('SW error:', e));
+}
+
+// INIT
+loadTasks();
+render();
+checkNotifBanner();
+setTimeout(scheduleNotifications, 3000);
+</script>
+</body>
+</html>
